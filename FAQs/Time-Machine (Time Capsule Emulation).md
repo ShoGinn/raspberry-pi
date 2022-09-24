@@ -193,7 +193,7 @@ sudo nano /etc/fstab
 We need to append the UUID from above like this:
 
 ```sh
-UUID=7efbdfc5–9c85–4e01–873a-204e00c9aa45 /mnt/timemachine ext4 sync,noexec,nodev,noatime,nodiratime 0 0
+UUID=7efbdfc5–9c85–4e01–873a-204e00c9aa45 /mnt/timemachine defaults,auto,users,rw,nofail,noexec,noatime,nodiratime 0 0
 ```
 
 >Note: if you are using another format for your drive, don’t forget to replace it here in fstab

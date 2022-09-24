@@ -3,6 +3,15 @@
 CONFIG=/boot/config.txt
 spinner_pid=
 
+disable_ipv6() {
+    # Disable IPv6
+    echo "net.ipv6.conf.all.disable_ipv6 = 1" | sudo tee /etc/sysctl.d/disable-ipv6.conf >/dev/null
+    echo "blacklist ipv6" | sudo tee /etc/modprobe.d/blacklist-ipv6.conf >/dev/null
+}
+
+disable_audio() {
+    sed -i '/dtparam=audio/c dtparam=audio=off' $CONFIG
+}
 disable_bluetooth() {
     dtoverlay_entry disable-bt
     stop_and_mask bluetooth
@@ -77,7 +86,9 @@ start_spinner "Updating apt. This could take a while ..."
 stop_spinner
 wait
 # Disable Stuff
-start_spinner "Disabling Bluetooth, WiFi and setting Locales"
+start_spinner "Disabling Bluetooth, WiFi, Audio and ipv6 and setting Locales"
+disable_audio
+disable_ipv6
 disable_bluetooth
 disable_wifi
 execute_raspi_config
