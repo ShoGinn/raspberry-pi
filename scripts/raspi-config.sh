@@ -102,53 +102,53 @@ if [[ "${__system_user_name}" != 'root' ]]; then
     exit 1
 fi
 
+__boot_config=/boot/config.txt
+
 ### Runtime
 ##############################################################################
 
-__boot_config=/boot/config.txt
-
-disable_ipv6() {
+__disable_ipv6() {
     info "Disabling ipv6."
     echo "net.ipv6.conf.all.disable_ipv6 = 1" | tee /etc/sysctl.d/disable-ipv6.conf >/dev/null
     echo "blacklist ipv6" | tee /etc/modprobe.d/blacklist-ipv6.conf >/dev/null
 }
 
-disable_audio() {
+__disable_audio() {
     info "Disabling Audio."
     sed -i '/dtparam=audio/c dtparam=audio=off' $__boot_config
 }
-disable_bluetooth() {
+__disable_bluetooth() {
     info "Disabling Bluetooth."
-    dtoverlay_entry disable-bt
-    stop_and_mask bluetooth
+    __dtoverlay_entry disable-bt
+    __stop_and_mask bluetooth
     # Remove bluetooth dependencies
     apt-get purge bluez piwiz -y -qq >/dev/null
     apt-get autoremove --purge -y -qq >/dev/null
 }
 
-disable_wifi() {
+__disable_wifi() {
     info "Disabling WiFi."
-    dtoverlay_entry disable-wifi
-    stop_and_mask wpa_supplicant hciuart
+    __dtoverlay_entry disable-wifi
+    __stop_and_mask wpa_supplicant hciuart
 }
 
-dtoverlay_entry() {
+__dtoverlay_entry() {
     if ! grep -q "dtoverlay=$1" $__boot_config; then
         echo "dtoverlay=$1" | tee -a $__boot_config >/dev/null
     fi
 }
 
-stop_and_mask() {
+__stop_and_mask() {
     systemctl stop "$@"
     systemctl mask "$@"
 }
-update_apt() {
+__update_apt() {
     info "Updating the apt packages."
     apt-get update >/dev/null
     apt-get -y upgrade -qq >/dev/null
 
 }
-execute_raspi_config() {
+__execute_raspi_config() {
     info "Updating the raspi-config settings."
     grep -E -v -e '^\s*#' -e '^\s*$' <<END |
 \
@@ -172,15 +172,24 @@ END
 
 }
 
-update_apt
-# Disable Stuff
-disable_audio
-disable_ipv6
-disable_bluetooth
-disable_wifi
-execute_raspi_config
-stop_and_mask ModemManager.service
+headless_config() {
+    __update_apt
+    # Disable Stuff
+    __disable_audio
+    __disable_ipv6
+    __disable_bluetooth
+    __disable_wifi
+    __execute_raspi_config
+    __stop_and_mask ModemManager.service
 
-warning "Rebooting in 5 seconds"
-sleep 5
-reboot
+    warning "Rebooting in 5 seconds"
+    sleep 5
+    reboot
+}
+
+if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+    export -f headless_config
+else
+    headless_config "${@}"
+    exit ${?}
+fi
